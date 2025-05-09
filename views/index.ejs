@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image to PDF Converter</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 30px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        p {
+            margin-top: 20px;
+            font-weight: bold;
+            color: green;
+        }
+
+        p.error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Convert Folder Images to PDF</h1>
+        <form action="/convert" method="POST">
+            <button type="submit" id="convertButton">Convert</button>
+        </form>
+        <% if (message) { %>
+            <p class="<%= message.includes('Error') ? 'error' : '' %>"><%= message %></p>
+        <% } %>
+    </div>
+
+    <script>
+        document.querySelector("form").addEventListener("submit", function (event) {
+            const button = document.getElementById("convertButton");
+
+            // Store submission status in session storage
+            sessionStorage.setItem("submitted", "true");
+
+            // Disable the button and show loading state
+            button.disabled = true;
+            button.textContent = "Converting...";
+            button.style.backgroundColor = "#ccc";
+            button.style.cursor = "not-allowed";
+        });
+
+        // Prevent auto re-triggering on page refresh
+        window.addEventListener("load", function () {
+            if (sessionStorage.getItem("submitted") === "true") {
+                sessionStorage.removeItem("submitted"); // Reset flag
+                document.getElementById("convertButton").disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
