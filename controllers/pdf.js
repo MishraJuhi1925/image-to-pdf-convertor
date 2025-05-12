@@ -2,6 +2,7 @@ const fs = require('fs');
 const { ROOT_PATH, OUTPUT_PATH } = require('../utils/constant-path');
 const path = require('path');
 const { convert } = require('image-to-pdf');
+const Stats = require('../utils/stats');
 
 module.exports = class PdfController {
 
@@ -25,12 +26,19 @@ module.exports = class PdfController {
     }
 
     static getFilesFromTargetFolders() {
+
+        // initialise the result file for output
+       Stats.initializeResultFile();
+
         this.getTargetFolders().forEach(folder => {
             const folderPath = path.join(ROOT_PATH, folder);
             const files = fs.readdirSync(folderPath)
                 .filter(file => /\.(jpg|jpeg|png)$/i.test(file))
                 .map(file => path.join(folderPath, file));
 
+            // insert data in the file
+            let textClass = new Stats(folder,files.length)
+            textClass.insertStatsInResultFile()
             this.generatePdf(files, folder);
         });
     }
