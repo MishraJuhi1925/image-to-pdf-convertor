@@ -44,6 +44,7 @@ module.exports = class PdfController {
     }
 
     static generatePDFfromFolders(req,res,next) {
-        this.getFilesFromTargetFolders();
+        PdfController.getFilesFromTargetFolders();
+        res.render("index", { message: "All folders converted successfully!" });
     }
 };

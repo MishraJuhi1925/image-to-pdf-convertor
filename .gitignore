@@ -30,4 +30,4 @@ Thumbs.db
 # Exclude specific directories
 app/public/output/
 app/public/ROOT_CONTAINER/
-app/stats.txt
+app/public/stats.txt
