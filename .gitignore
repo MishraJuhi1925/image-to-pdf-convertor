@@ -28,6 +28,6 @@ Thumbs.db
 *.swp
 
 # Exclude specific directories
-public/output/
-public/ROOT_CONTAINER/
-stats.txt
+app/public/output/
+app/public/ROOT_CONTAINER/
+app/stats.txt
