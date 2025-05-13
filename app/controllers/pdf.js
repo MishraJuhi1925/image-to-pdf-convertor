@@ -4,6 +4,12 @@ const path = require('path');
 const { convert } = require('image-to-pdf');
 const Stats = require('../utils/stats');
 const { exec } = require('child_process');
+
+let gsStringAccordingToSystem = process.env.SYSTEM === 'mac' ? 
+'gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile="' :
+ 'gswin64c -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile="' 
+
+
 module.exports = class PdfController {
 
     static getTargetFolders() {
@@ -12,7 +18,7 @@ module.exports = class PdfController {
     }
 
     static async generatePdf(files, folder) {
-        if (files.length === 0) return; 
+        if (files.length === 0) return;
 
         const outputPath = path.join(OUTPUT_PATH, `${folder}.pdf`);
 
@@ -22,50 +28,57 @@ module.exports = class PdfController {
             pdfStream.on('error', reject);
         });
 
-        this.compressPdfSize(outputPath);
+        return this.compressPdfSize(outputPath);
     }
 
-    static compressPdfSize(pdfPath) {
-        const compressedPath = pdfPath.replace('.pdf', '_compressed.pdf');
-        const gsCommand = `gswin64c -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${compressedPath}" "${pdfPath}"`;
+    static async compressPdfSize(pdfPath) {
+        return new Promise((resolve, reject) => {
+            const compressedPath = pdfPath.replace('.pdf', '_compressed.pdf');
+            const gsCommand = `${gsStringAccordingToSystem}${compressedPath}" "${pdfPath}"`;
 
-        exec(gsCommand, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Ghostscript compression failed: ${error.message}`);
-                return;
-            }
-
-            // Overwrite original PDF with compressed one
-            fs.rename(compressedPath, pdfPath, (err) => {
-                if (err) {
-                    console.error(`Failed to overwrite with compressed PDF: ${err.message}`);
-                } else {
-                    console.log(`Compressed PDF saved: ${pdfPath}`);
+            exec(gsCommand, (error, stdout, stderr) => {
+                if (error) {
+                    reject(new Error(`Ghostscript compression failed: ${error.message}`));
+                    return;
                 }
+
+                fs.rename(compressedPath, pdfPath, (err) => {
+                    if (err) {
+                        reject(new Error(`Failed to overwrite with compressed PDF: ${err.message}`));
+                    } else {
+                        resolve(pdfPath);
+                    }
+                });
             });
         });
     }
 
-    static getFilesFromTargetFolders() {
+    static async getFilesFromTargetFolders() {
 
-        // initialise the result file for output
-       Stats.initializeResultFile();
+        Stats.initializeResultFile();
 
-        this.getTargetFolders().forEach(folder => {
+        const folders = this.getTargetFolders();
+        for (const folder of folders) {
             const folderPath = path.join(ROOT_PATH, folder);
             const files = fs.readdirSync(folderPath)
                 .filter(file => /\.(jpg|jpeg|png)$/i.test(file))
                 .map(file => path.join(folderPath, file));
 
-            // insert data in the file
-            let textClass = new Stats(folder,files.length)
-            textClass.insertStatsInResultFile()
-            this.generatePdf(files, folder);
-        });
+            let textClass = new Stats(folder, files.length);
+            textClass.insertStatsInResultFile();
+
+            await this.generatePdf(files, folder);
+        }
+
     }
 
-    static generatePDFfromFolders(req,res,next) {
-        PdfController.getFilesFromTargetFolders();
-        res.render("index", { message: "All folders converted successfully!" });
+    static async generatePDFfromFolders(req, res, next) {
+        try {
+            await PdfController.getFilesFromTargetFolders();
+            res.render("index", { message: "All folders converted successfully!" });
+        } catch (error) {
+            res.render('index', { message: error.message })
+        }
+
     }
 };
