@@ -3,7 +3,7 @@ const { ROOT_PATH, OUTPUT_PATH } = require('../utils/constant-path');
 const path = require('path');
 const { convert } = require('image-to-pdf');
 const Stats = require('../utils/stats');
-
+const { exec } = require('child_process');
 module.exports = class PdfController {
 
     static getTargetFolders() {
@@ -23,6 +23,27 @@ module.exports = class PdfController {
         });
 
         this.compressPdfSize(outputPath);
+    }
+
+    static compressPdfSize(pdfPath) {
+        const compressedPath = pdfPath.replace('.pdf', '_compressed.pdf');
+        const gsCommand = `gswin64c -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${compressedPath}" "${pdfPath}"`;
+
+        exec(gsCommand, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Ghostscript compression failed: ${error.message}`);
+                return;
+            }
+
+            // Overwrite original PDF with compressed one
+            fs.rename(compressedPath, pdfPath, (err) => {
+                if (err) {
+                    console.error(`Failed to overwrite with compressed PDF: ${err.message}`);
+                } else {
+                    console.log(`Compressed PDF saved: ${pdfPath}`);
+                }
+            });
+        });
     }
 
     static getFilesFromTargetFolders() {
